@@ -1,4 +1,4 @@
-using Masters.Domain.Contracts;
+﻿using Masters.Domain.Contracts;
 using Masters.Infrastructure;
 using Masters.Infrastructure.Contexts;
 using Sales.Services;
@@ -8,6 +8,11 @@ using Masters.Services;
 using Domain.Contracts;
 using Infrastructure;
 using Serilog;
+
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
+using Newtonsoft.Json.Linq;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,6 +45,55 @@ builder.Services.AddCors(options =>
     });
 });
 
+
+builder.Services.AddAuthentication("Bearer")
+    .AddJwtBearer("Bearer", options =>
+    {
+        // Set the metadata address for the OpenID configuration
+        options.MetadataAddress = builder.Configuration["Keycloak:OpenIdConfigMetaAddr"]!;
+        options.Authority = builder.Configuration["Keycloak:Authority"];
+        options.Audience = builder.Configuration["Keycloak:ClientId"];
+        options.RequireHttpsMetadata = false;
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidIssuer = builder.Configuration["Keycloak:Authority"],
+            ValidAudience = builder.Configuration["Keycloak:Audience"],
+            RoleClaimType = ClaimTypes.Role
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = context =>
+            {
+                var claimsIdentity = context.Principal!.Identity as ClaimsIdentity;
+                var claims = context.Principal!.Claims.ToList();
+
+                // Extract roles from "resource_access.angular-app.roles"
+                var resourceAccess = claims.FirstOrDefault(c => c.Type == "resource_access");
+                if (resourceAccess != null)
+                {
+                    //Deserialize the resource access claim
+                    var parsedResourceAccess = JObject.Parse(resourceAccess.Value);
+                    var angularAppRoles = parsedResourceAccess["angular-app"]?["roles"]?.ToObject<List<string>>();
+
+                    if (angularAppRoles != null)
+                    {
+                        foreach (var role in angularAppRoles)
+                        {
+                            claimsIdentity!.AddClaim(new Claim(ClaimTypes.Role, role)); // ✅ Map roles properly
+                        }
+                    }
+                }
+
+                return Task.CompletedTask;
+            }
+        };
+    });
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -51,6 +105,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

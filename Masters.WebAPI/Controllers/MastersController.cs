@@ -1,9 +1,12 @@
 ﻿using Masters.Domain.Entities;
 using Masters.Services;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+
+using OIDC;
 
 using System.Text.Json;
 
@@ -106,6 +109,7 @@ namespace Sales.WebAPI.Controllers
         // GET : api/Masters/getAllProducts
 
         [HttpGet("getAllProducts")]
+        [Authorize(Roles = Roles.Admin)]
         public async Task<IActionResult> GetAllProducts()
         {
             logger.LogInformation("Getting all products");
