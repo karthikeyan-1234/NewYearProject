@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,6 +46,10 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Program.cs
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<IKeycloakAuthorizationService, KeycloakAuthorizationService>();
+
 
 builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer("Bearer", options =>
@@ -52,7 +57,7 @@ builder.Services.AddAuthentication("Bearer")
         // Set the metadata address for the OpenID configuration
         options.MetadataAddress = builder.Configuration["Keycloak:OpenIdConfigMetaAddr"]!;
         options.Authority = builder.Configuration["Keycloak:Authority"];
-        options.Audience = builder.Configuration["Keycloak:ClientId"];
+        options.Audience = builder.Configuration["Keycloak:Audience"];
         options.RequireHttpsMetadata = false;
 
         options.TokenValidationParameters = new TokenValidationParameters
@@ -63,9 +68,24 @@ builder.Services.AddAuthentication("Bearer")
             ValidIssuer = builder.Configuration["Keycloak:Authority"],
             ValidAudience = builder.Configuration["Keycloak:Audience"],
             RoleClaimType = ClaimTypes.Role
+
+            /*IssuerSigningKeyResolver = (token, securityToken, kid, parameters) =>     //Not Required for now.
+            {
+                var client = new HttpClient();
+                var keycloakUrl = builder.Configuration["Keycloak:OpenIdConfigMetaAddr"];
+                var response = client.GetAsync(keycloakUrl).Result;
+                response.EnsureSuccessStatusCode();
+                var responseString = response.Content.ReadAsStringAsync().Result;
+                var jwksUrl = JObject.Parse(responseString)["jwks_uri"].Value<string>();
+                var jwksResponse = client.GetAsync(jwksUrl).Result;
+                jwksResponse.EnsureSuccessStatusCode();
+                var jwksResponseString = jwksResponse.Content.ReadAsStringAsync().Result;
+                var jwks = JsonConvert.DeserializeObject<Jwks>(jwksResponseString);
+                return jwks.Keys;
+            }*/
         };
 
-        options.Events = new JwtBearerEvents
+        /*options.Events = new JwtBearerEvents
         {
             OnTokenValidated = context =>
             {
@@ -91,7 +111,7 @@ builder.Services.AddAuthentication("Bearer")
 
                 return Task.CompletedTask;
             }
-        };
+        };*/
     });
 
 var app = builder.Build();

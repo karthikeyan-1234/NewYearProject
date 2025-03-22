@@ -1,5 +1,6 @@
 ﻿using Masters.Domain.Entities;
 using Masters.Services;
+using Masters.WebAPI;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -19,10 +20,42 @@ namespace Sales.WebAPI.Controllers
         IMasterService masterService;
         ILogger<MastersController> logger;
 
+        /*"scopes": [
+            "read",
+            "create",
+            "delete"
+        ]*/
+
+        //Create a list of scopes
+        private readonly static string[] scopes = new string[] { "read", "create", "delete" };
+
         public MastersController(IMasterService masterService, ILogger<MastersController> logger)
         {
             this.masterService = masterService;
             this.logger = logger;
+        }
+
+
+        [HttpGet("getAllProducts")]
+        //[Authorize(Roles = Roles.Admin)]
+        [CheckIf(resource:"grade", hasScopes: ["read", "create", "delete"])]
+        public async Task<IActionResult> GetAllProducts()
+        {
+            //logger.LogInformation("Getting all products");
+            //var products = await masterService.GetAllProductsAsync();
+            //logger.LogInformation(JsonSerializer.Serialize(products));
+            //Dummy async product list
+
+            var products = new List<Product>
+            {
+                new Product { Id = 1, Name = "Product 1", ProductTypeId = 1 },
+                new Product { Id = 2, Name = "Product 2", ProductTypeId = 2 },
+                new Product { Id = 3, Name = "Product 3", ProductTypeId = 3 },
+                new Product { Id = 4, Name = "Product 4", ProductTypeId = 4 },
+                new Product { Id = 5, Name = "Product 5", ProductTypeId = 5 }
+            };
+
+            return Ok(products);
         }
 
         // POST : api/Masters/addProducts
@@ -108,15 +141,7 @@ namespace Sales.WebAPI.Controllers
 
         // GET : api/Masters/getAllProducts
 
-        [HttpGet("getAllProducts")]
-        [Authorize(Roles = Roles.Admin)]
-        public async Task<IActionResult> GetAllProducts()
-        {
-            logger.LogInformation("Getting all products");
-            var products = await masterService.GetAllProductsAsync();
-            logger.LogInformation(JsonSerializer.Serialize(products));
-            return Ok(products);
-        }
+        
 
         // GET : api/Masters/getAllProductTypes
 
