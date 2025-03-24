@@ -37,25 +37,32 @@ namespace Sales.WebAPI.Controllers
 
 
         [HttpGet("getAllProducts")]
-        //[Authorize(Roles = Roles.Admin)]
-        [CheckIf(resource:"grade", hasScopes: ["read", "create", "delete"])]
+        [CheckIf(resource:"masters", hasScopes: ["read", "create", "delete"])]  //hasScopes: ["read", "create", "delete"])
         public async Task<IActionResult> GetAllProducts()
         {
-            //logger.LogInformation("Getting all products");
-            //var products = await masterService.GetAllProductsAsync();
-            //logger.LogInformation(JsonSerializer.Serialize(products));
-            //Dummy async product list
-
-            var products = new List<Product>
-            {
-                new Product { Id = 1, Name = "Product 1", ProductTypeId = 1 },
-                new Product { Id = 2, Name = "Product 2", ProductTypeId = 2 },
-                new Product { Id = 3, Name = "Product 3", ProductTypeId = 3 },
-                new Product { Id = 4, Name = "Product 4", ProductTypeId = 4 },
-                new Product { Id = 5, Name = "Product 5", ProductTypeId = 5 }
-            };
-
+            logger.LogInformation("Getting all products");
+            var products = await masterService.GetAllProductsAsync();
+            logger.LogInformation(JsonSerializer.Serialize(products));
             return Ok(products);
+        }
+
+        // PUT: api/Masters/updateProduct
+        [HttpPut("updateProduct")]
+        [CheckIf(resource: "masters", hasScopes: ["edit"])]
+        public async Task<IActionResult> UpdateProduct([FromBody] Product product)
+        {
+            await masterService.UpdateProductAsync(product);
+            return Ok();
+        }
+
+        // PUT : api/Masters/updateProducts
+
+        [HttpPut("updateProducts")]
+        [CheckIf(resource: "masters", hasScopes: ["edit"])]
+        public async Task<IActionResult> UpdateProducts([FromBody] IEnumerable<Product> products)
+        {
+            await masterService.UpdateProductsAsync(products);
+            return Ok();
         }
 
         // POST : api/Masters/addProducts
@@ -85,14 +92,7 @@ namespace Sales.WebAPI.Controllers
             return Ok(newCustomers);
         }
 
-        // PUT : api/Masters/updateProducts
 
-        [HttpPut("updateProducts")]
-        public async Task<IActionResult> UpdateProducts([FromBody] IEnumerable<Product> products)
-        {
-            await masterService.UpdateProductsAsync(products);
-            return Ok();
-        }
 
         // PUT : api/Masters/updateProductTypes
 
@@ -211,13 +211,7 @@ namespace Sales.WebAPI.Controllers
         }
 
 
-        // PUT: api/Masters/updateProduct
-        [HttpPut("updateProduct")]
-        public async Task<IActionResult> UpdateProduct([FromBody] Product product)
-        {
-            await masterService.UpdateProductAsync(product);
-            return Ok();
-        }
+
 
         // PUT: api/Masters/updateProductType
         [HttpPut("updateProductType")]

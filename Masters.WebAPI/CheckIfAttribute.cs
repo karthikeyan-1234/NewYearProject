@@ -17,6 +17,8 @@ namespace Masters.WebAPI
             _allowedScopes = hasScopes;
         }
 
+        //public CheckIfAttribute(string resource) : this(resource, new string[] { }) { }
+
         public void OnAuthorization(AuthorizationFilterContext context)
         {
             if (!context.HttpContext.User.Identity!.IsAuthenticated)
@@ -40,6 +42,7 @@ namespace Masters.WebAPI
 
                 if (!isAuthorized)
                 {
+                    //Return ForbidResult if user is not authorized with authentication scheme
                     context.Result = new ForbidResult();
                 }
             }

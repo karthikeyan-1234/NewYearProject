@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.Extensions.Configuration;
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -31,22 +33,25 @@ namespace Masters.Services
     public class KeycloakAuthorizationService : IKeycloakAuthorizationService
     {
         private readonly IHttpClientFactory? _httpClientFactory;
+        private readonly IConfiguration _configuration;
 
-        public KeycloakAuthorizationService(IHttpClientFactory httpClientFactory)
+        public KeycloakAuthorizationService(IHttpClientFactory httpClientFactory, IConfiguration configuration)
         {
             _httpClientFactory = httpClientFactory;
+            _configuration = configuration;
         }
 
         public async Task<bool> CheckResourcePermissionAsync(string accessToken, string resourceName, string[] allowedScopes)
         {
             var httpClient = _httpClientFactory!.CreateClient();
             var tokenEndpoint = "http://localhost:8080/realms/master/protocol/openid-connect/token";
+
             var requestData = new Dictionary<string, string>
             {
-                ["grant_type"] = "urn:ietf:params:oauth:grant-type:uma-ticket",
-                ["audience"] = "authz",
+                ["grant_type"] = _configuration["Keycloak:GrantType"]!, //"urn:ietf:params:oauth:grant-type:uma-ticket"
+                ["audience"] = _configuration["Keycloak:Audience"]!, //"authz"
                 ["response_mode"] = "permissions",
-                ["permission"] = $"{resourceName}#{string.Join(",", allowedScopes)}"
+                ["permission"] = $"{resourceName}" //#{string.Join(",", allowedScopes)}
             };
 
             httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
