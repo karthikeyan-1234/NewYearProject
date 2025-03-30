@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -41,10 +42,10 @@ namespace Masters.Services
             _configuration = configuration;
         }
 
-        public async Task<bool> CheckResourcePermissionAsync(string accessToken, string resourceName, string[] allowedScopes)
+        public async Task<bool> CheckResourcePermissionAsync(string user, string accessToken, string resourceName, string[] allowedScopes)
         {
             var httpClient = _httpClientFactory!.CreateClient();
-            var tokenEndpoint = "http://localhost:8080/realms/master/protocol/openid-connect/token";
+            var tokenEndpoint = _configuration["Keycloak:TokenEndpoint"]!;
 
             var requestData = new Dictionary<string, string>
             {
@@ -64,6 +65,11 @@ namespace Masters.Services
 
             var responseContent = await response.Content.ReadAsStringAsync();
             var permissions = JsonSerializer.Deserialize<List<PermissionItem>>(responseContent);
+
+            //Print Users's email from claims
+            Console.WriteLine($"User: {user}");
+
+            Console.WriteLine($"Permissions: {JsonSerializer.Serialize(permissions)}");
 
             var result = permissions?.Any(p =>
                 p.Rsname == resourceName &&
